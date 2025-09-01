@@ -1,6 +1,6 @@
 ﻿namespace Supercell.ArxanUnprotector.Strings.Providers;
 
-using System.Text;
+using System.Security.Cryptography;
 using Supercell.ArxanUnprotector.Disassembler;
 using Supercell.ArxanUnprotector.Ranges;
 using Gee.External.Capstone.Arm;
@@ -15,7 +15,7 @@ public class ArmStringEncryptionService : IStringEncryptionService
 
         ArmInstruction ldrJumpInstruction = null;
         ArmInstruction addJumpInstruction = null;
-        
+
         using (ArmDisassembler disassembler = new ArmDisassembler(true))
         {
             Span<byte> functionBytes = Library.Take(decryptFunctionAddress, 0x10000);
@@ -35,7 +35,7 @@ public class ArmStringEncryptionService : IStringEncryptionService
                             if (andRegister.Register.Id == ldrRegister.Register.Id)
                             {
                                 addJumpInstruction = instruction;
-                                
+
                                 int pc = disassembler.CalculateProgramCounterRegister(ldrJumpInstruction, null);
                                 int offset = ldrJumpInstruction.Details.Operands[1].Memory.Displacement;
                                 int pTableAddress = BitConverter.ToInt32(Library.Take(pc + offset));
@@ -50,12 +50,12 @@ public class ArmStringEncryptionService : IStringEncryptionService
                         }
                     }
                 }
-                
+
                 if (instruction.Id == ArmInstructionId.ARM_INS_LDR)
                 {
                     ArmOperand operand2 = instruction.Details.Operands[1];
 
-                    if (operand2 is {Type: ArmOperandType.Memory, Memory.Base.Id: ArmRegisterId.ARM_REG_PC})
+                    if (operand2 is { Type: ArmOperandType.Memory, Memory.Base.Id: ArmRegisterId.ARM_REG_PC })
                     {
                         ldrJumpInstruction = instruction;
                     }
@@ -69,7 +69,7 @@ public class ArmStringEncryptionService : IStringEncryptionService
     public EncryptedStringKey FindKey()
     {
         int decryptFunctionAddress = Library.InitFunctions.First();
-        
+
         ArmInstruction andKeyInstruction = null;
         ArmInstruction ldrJumpInstruction = null;
         ArmInstruction addJumpInstruction = null;
@@ -89,7 +89,7 @@ public class ArmStringEncryptionService : IStringEncryptionService
                         if (andRegister.Type == ArmOperandType.Register)
                         {
                             ArmOperand ldrRegister = ldrJumpInstruction.Details.Operands[0];
-                            
+
                             if (andRegister.Register.Id == ldrRegister.Register.Id)
                             {
                                 addJumpInstruction = instruction;
@@ -104,7 +104,7 @@ public class ArmStringEncryptionService : IStringEncryptionService
                     {
                         ArmOperand operand2 = instruction.Details.Operands[1];
 
-                        if (operand2 is {Type: ArmOperandType.Memory, Memory.Base.Id: ArmRegisterId.ARM_REG_PC})
+                        if (operand2 is { Type: ArmOperandType.Memory, Memory.Base.Id: ArmRegisterId.ARM_REG_PC })
                         {
                             ldrJumpInstruction = instruction;
                         }
@@ -112,7 +112,7 @@ public class ArmStringEncryptionService : IStringEncryptionService
                 }
                 else
                 {
-                    if (instruction.Id == ArmInstructionId.ARM_INS_AND && instruction.Details.Operands[2] is {Type: ArmOperandType.Immediate, Immediate: 127 })
+                    if (instruction.Id == ArmInstructionId.ARM_INS_AND && instruction.Details.Operands[2] is { Type: ArmOperandType.Immediate, Immediate: 127 })
                     {
                         andKeyInstruction = instruction;
                     }
@@ -121,7 +121,7 @@ public class ArmStringEncryptionService : IStringEncryptionService
 
             if (ldrJumpInstruction == null)
                 throw new NotSupportedException("Could not find String key.");
-            
+
             int pc = disassembler.CalculateProgramCounterRegister(ldrJumpInstruction, null);
             int offset = ldrJumpInstruction.Details.Operands[1].Memory.Displacement;
             int pKeyAddress = BitConverter.ToInt32(Library.Take(pc + offset));
@@ -129,14 +129,28 @@ public class ArmStringEncryptionService : IStringEncryptionService
             return new EncryptedStringKey(pKeyAddress + disassembler.CalculateProgramCounterRegister(addJumpInstruction, null), 128, Library);
         }
     }
-    
+
     public void Compute(Span<byte> bytes)
     {
         Span<byte> key = Library.EncryptedStringKey.Content;
-        
+
         for (int i = 0; i < bytes.Length; i++)
         {
             bytes[i] ^= key[i % 128];
         }
+    }
+    public void ByebyeKey()
+    {
+        Span<byte> key = Library.EncryptedStringKey.Content;
+
+        for (int i = 0; i < key.Length; i++)
+        {
+            key[i] = 0x00;
+        }
+    }
+    public void newKey()
+    {
+        Span<byte> key = Library.EncryptedStringKey.Content;
+        RandomNumberGenerator.Fill(key);
     }
 }

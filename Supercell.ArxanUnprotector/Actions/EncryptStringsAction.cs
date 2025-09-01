@@ -6,8 +6,8 @@ using Supercell.ArxanUnprotector.Strings;
 
 public class EncryptStringsAction : IAction
 {
-    public string Execute(Library original, Library modified, string output)
-    {
+    public string Execute(Library original, Library modified, string output, bool isReimplementStringEncryption)
+    {   
         if (original == null && modified == null)
             return "No input library provided.";
         if (original != null && modified != null)
@@ -27,13 +27,23 @@ public class EncryptStringsAction : IAction
 		}
 		else
 		{
-			Console.WriteLine("XOR key: " + BitConverter.ToString(encryptedStringKey.Content.ToArray()).Replace("-", string.Empty));
+            if (!isReimplementStringEncryption && BitConverter.ToString(encryptedStringKey.Content.ToArray()).Replace("-", string.Empty) == "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+			{
+				return "Strings encryption has been killled, this is unnecessary";
+			}
+            if (!isReimplementStringEncryption)
+            {
+                Console.WriteLine("XOR key: " + BitConverter.ToString(encryptedStringKey.Content.ToArray()).Replace("-", string.Empty));
+            }
 		}
 
 		if (input.IsStringsEncrypted)
             return "Strings already encrypted";
 
-        input.EncryptedStringKey.Randomize();
+        if (isReimplementStringEncryption)
+		{
+			input.EncryptedStringKey.Randomize();
+		}
         input.EncryptStrings();
         input.Save(output);
 

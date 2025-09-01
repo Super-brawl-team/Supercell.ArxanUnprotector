@@ -1,5 +1,6 @@
 ﻿namespace Supercell.ArxanUnprotector;
 
+using System.Net.Sockets;
 using Supercell.ArxanUnprotector.Ranges;
 using Supercell.ArxanUnprotector.Ranges.Providers;
 using Supercell.ArxanUnprotector.Strings;
@@ -46,7 +47,7 @@ public abstract class Library
     
     private readonly IRangeTableProvider _rangeTableProvider;
     private readonly IStringEncryptionService _stringEncryptionService;
-    
+
     // Lazy loaded
     private IReadOnlyList<RangeTable> _rangeTables;
     private RangeTable _encryptedStringRangeTable;
@@ -149,12 +150,17 @@ public abstract class Library
         
         EncryptStringsImpl();
     }
+    
+    public void KillStringsEncryption()
+    {
+        NullifyKeyImpl();
+    }
 
     public void EncryptStrings()
     {
         if (IsStringsEncrypted)
             throw new Exception("Strings are already encrypted.");
-        
+
         EncryptStringsImpl();
     }
     
@@ -173,7 +179,13 @@ public abstract class Library
             _stringEncryptionService.Compute(Take(entry.Address, entry.Length));
         }
     }
-    
+    private void NullifyKeyImpl()
+    {
+        Console.WriteLine("Killing strings encryption...");
+        _stringEncryptionService.ByebyeKey();
+        Console.WriteLine("Killed with success bye bye xor!");
+    }
+
     public abstract IEnumerable<int> InitFunctions { get; }
     public abstract IEnumerable<int> FiniFunctions { get; }
     

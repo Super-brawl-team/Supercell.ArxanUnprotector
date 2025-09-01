@@ -5,8 +5,9 @@ using Supercell.ArxanUnprotector.Ranges;
 
 public class VerifyChecksumsAction : IAction
 {
-    public string Execute(Library original, Library modified, string output)
+    public string Execute(Library original, Library modified, string output, bool isKillStringEncryption)
     {
+        if (isKillStringEncryption) Console.WriteLine("Use kill string encryption with the 'decrypt' action");
         if (original == null)
             return "Original library required to verify checksums.";
         if (modified == null)

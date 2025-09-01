@@ -6,7 +6,7 @@ using Supercell.ArxanUnprotector.Strings;
 
 public class DecryptStringsAction : IAction
 {
-	public string Execute(Library original, Library modified, string output)
+	public string Execute(Library original, Library modified, string output, bool isKillStringEncryption)
 	{
 		if (original == null && modified == null)
 			return "No input library provided.";
@@ -27,13 +27,25 @@ public class DecryptStringsAction : IAction
 		}
 		else
 		{
-			Console.WriteLine("XOR key: " + BitConverter.ToString(encryptedStringKey.Content.ToArray()).Replace("-", string.Empty));
+			if (BitConverter.ToString(encryptedStringKey.Content.ToArray()).Replace("-", string.Empty) == "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+			{
+				return "Strings are already decrypted";
+			}
+			if (!isKillStringEncryption)
+			{
+				Console.WriteLine("XOR key: " + BitConverter.ToString(encryptedStringKey.Content.ToArray()).Replace("-", string.Empty));
+
+			}
 		}
 
 		if (!input.IsStringsEncrypted)
 			return "Strings already decrypted";
 
 		input.DecryptStrings();
+		if (isKillStringEncryption)
+		{
+			input.KillStringsEncryption();
+		}
 		input.Save(output);
 
 		return null;
